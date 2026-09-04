@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensus Ekonomi - Sentiment Analysis Dashboard</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Fonts & External Libraries -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="h-full text-slate-800 bg-slate-50 flex flex-col md:flex-row overflow-hidden">
+
+    <!-- Mobile Header Navigation -->
+    <div class="md:hidden bg-white border-b border-slate-200 p-4 flex justify-between items-center z-20">
+        <div class="flex items-center gap-2">
+            <div class="p-2 bg-brand-600 text-white rounded-lg">
+                <i data-lucide="message-square" class="w-5 h-5"></i>
+            </div>
+            <span class="font-bold text-slate-900 tracking-tight text-lg">SentimenEkonomi</span>
+        </div>
+        <button id="mobileMenuBtn" class="p-2 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100">
+            <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-30 w-64 bg-white border-r border-slate-200 transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out flex flex-col justify-between">
+        <div>
+            <!-- Sidebar Brand Header -->
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-brand-600 text-white rounded-lg shadow-sm">
+                        <i data-lucide="message-square" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-slate-900 text-base leading-none">Sentimen Ekonomi</h1>
+                        <span class="text-xs text-slate-500 font-medium">Analisis Opini & Apify</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Navigation Links -->
+            <nav class="p-4 space-y-1">
+                <a href="#overview" class="nav-item active flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-brand-600 bg-brand-50">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    <span>Ikhtisar Sentimen</span>
+                </a>
+                <a href="#apify-console" class="nav-item flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+                    <i data-lucide="database" class="w-4 h-4"></i>
+                    <span>Apify Live Feed</span>
+                    <span class="ml-auto text-[10px] bg-emerald-100 text-emerald-700 font-semibold px-2 py-0.5 rounded-full">Connected</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Sidebar User & API Status Box -->
+        <div class="p-4 m-4 bg-slate-50 rounded-xl border border-slate-200">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="p-1.5 bg-white text-slate-700 rounded-md border border-slate-200">
+                    <i data-lucide="key" class="w-4 h-4"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <p class="text-xs font-semibold text-slate-900 truncate">Apify Scraper Engine</p>
+                    <p class="text-[11px] text-slate-500 font-mono truncate" id="sidebarUserId">ID: Tpt1iFi9...</p>
+                </div>
+            </div>
+            <div class="flex items-center justify-between text-[11px] pt-2 border-t border-slate-200 text-slate-500">
+                <span>Status Koneksi</span>
+                <span class="inline-flex items-center gap-1 text-emerald-600 font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Aktif
+                </span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto flex flex-col min-w-0 bg-slate-50">
+        <!-- Top Sticky Navigation Bar -->
+        <header class="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-10 flex items-center justify-between gap-4">
+            <div class="relative flex-1 max-w-md">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="searchInput" placeholder="Cari isu, topik ekonomi, atau entitas bisnis..." class="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 focus:bg-white transition-all text-slate-800 placeholder-slate-400">
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="refreshBtn" class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">Sinkronkan Data</span>
+                </button>
+                <button id="exportCsvBtn" class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 transition-colors shadow-sm">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">Export Analisis</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <div class="p-6 max-w-7xl w-full mx-auto space-y-6">
+
+            <!-- Title & Metadata Banner -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Analisis Sentimen Ekonomi Publik</h2>
+                    <p class="text-sm text-slate-500 mt-1">Monitoring persepsi publik, isu pelaku usaha UMK/UMB, dan tren sentimen via Apify Scraper.</p>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-slate-500 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm">
+                    <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
+                    <span>Pembaruan Real-Time: <strong class="text-slate-700">Hari ini, 10:00 WIB</strong></span>
+                </div>
+            </div>
+
+            <!-- Key Sentiment Metrics (KPIs) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Skor Sentimen Net</span>
+                        <div class="p-2 bg-blue-50 text-brand-600 rounded-lg">
+                            <i data-lucide="smile" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="text-2xl font-bold text-slate-900">+64.2</div>
+                        <p class="text-xs text-emerald-600 font-medium flex items-center gap-1 mt-1">
+                            <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> Cenderung Positif (+4.1%)
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sentimen Positif</span>
+                        <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                            <i data-lucide="thumbs-up" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="text-2xl font-bold text-slate-900">68,4%</div>
+                        <p class="text-xs text-slate-500 font-medium mt-1">Isu pertumbuhan bisnis & UMK</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sentimen Negatif</span>
+                        <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
+                            <i data-lucide="thumbs-down" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="text-2xl font-bold text-slate-900">14,2%</div>
+                        <p class="text-xs text-slate-500 font-medium mt-1">Kenaikan bahan baku & pajaknya</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Volume Data</span>
+                        <div class="p-2 bg-slate-100 text-slate-700 rounded-lg">
+                            <i data-lucide="message-circle" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="text-2xl font-bold text-slate-900" id="totalVolumeText">142.850</div>
+                        <p class="text-xs text-emerald-600 font-medium flex items-center gap-1 mt-1">
+                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Apify Sync Active
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sentiment Analytics Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Sentiment Trend Line Chart -->
+                <div class="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                        <div>
+                            <h3 class="font-semibold text-slate-900 text-sm">Tren Sentimen Ekonomi (7 Hari Terakhir)</h3>
+                            <p class="text-xs text-slate-500">Perbandingan volume sebutan Positif, Netral, dan Negatif</p>
+                        </div>
+                        <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-medium">Real-time Tracker</span>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="sentimentTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Sentiment Breakdown Donut Chart -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                        <div>
+                            <h3 class="font-semibold text-slate-900 text-sm">Proporsi Sentimen</h3>
+                            <p class="text-xs text-slate-500">Distribusi keseluruhan persepsi</p>
+                        </div>
+                    </div>
+                    <div class="h-52 relative flex items-center justify-center">
+                        <canvas id="sentimentRatioChart"></canvas>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-100 text-xs text-center">
+                        <div>
+                            <span class="block font-bold text-slate-900">68.4%</span>
+                            <span class="text-slate-500 flex items-center justify-center gap-1 mt-0.5">
+                                <span class="w-2 h-2 rounded-full bg-brand-600"></span> Positif
+                            </span>
+                        </div>
+                        <div>
+                            <span class="block font-bold text-slate-900">17.4%</span>
+                            <span class="text-slate-500 flex items-center justify-center gap-1 mt-0.5">
+                                <span class="w-2 h-2 rounded-full bg-slate-400"></span> Netral
+                            </span>
+                        </div>
+                        <div>
+                            <span class="block font-bold text-slate-900">14.2%</span>
+                            <span class="text-slate-500 flex items-center justify-center gap-1 mt-0.5">
+                                <span class="w-2 h-2 rounded-full bg-slate-800"></span> Negatif
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Apify Data Integration Console -->
+            <div id="apifySection" class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-brand-50 text-brand-600 rounded-lg">
+                            <i data-lucide="cloud-lightning" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-slate-900 text-base">Integrasi Apify Live Data Feed</h3>
+                            <p class="text-xs text-slate-500">Ambil dataset percakapan publik / opini media dari Apify Actor</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="testApiBtn" class="px-3 py-1.5 text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1.5">
+                            <i data-lucide="activity" class="w-3.5 h-3.5"></i> Check API Status
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">API Token</label>
+                        <input type="password" id="apiTokenInput" value="apify_api_MWBzndjgDNEpQDBUHgJKdTesgDz7f42umCzf" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-mono text-slate-700 focus:bg-white focus:outline-none focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">User ID</label>
+                        <input type="text" id="userIdInput" value="Tpt1iFi9NfchYkmmZ" readonly class="w-full text-xs p-2.5 bg-slate-100 border border-slate-200 rounded-lg font-mono text-slate-500 cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Dataset ID (Apify Items)</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="datasetIdInput" placeholder="Masukkan Dataset ID..." class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-mono text-slate-700 focus:bg-white focus:outline-none focus:border-brand-500">
+                            <button id="fetchDatasetBtn" class="px-3 py-2 text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors flex items-center gap-1 shrink-0">
+                                <i data-lucide="arrow-down-to-line" class="w-3.5 h-3.5"></i> Fetch
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 rounded-lg p-3 text-emerald-400 font-mono text-xs overflow-x-auto max-h-28" id="apiConsoleLog">
+                    > Sentiment Engine Initialized. Ready to ingest datasets for User Tpt1iFi9NfchYkmmZ...
+                </div>
+            </div>
+
+            <!-- Sentiment Feed Table -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="font-semibold text-slate-900 text-sm">Umpan Opini & Sentimen Terkini</h3>
+                        <p class="text-xs text-slate-500">Daftar ulasan, komentar, dan postingan terkait kondisi ekonomi</p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select id="sentimentFilter" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:border-brand-500">
+                            <option value="ALL">Semua Sentimen</option>
+                            <option value="Positif">Positif</option>
+                            <option value="Netral">Netral</option>
+                            <option value="Negatif">Negatif</option>
+                        </select>
+
+                        <select id="sourceFilter" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:border-brand-500">
+                            <option value="ALL">Semua Sumber</option>
+                            <option value="Twitter/X">Twitter / X</option>
+                            <option value="Media Berita">Media Berita</option>
+                            <option value="Google Reviews">Google Reviews</option>
+                            <option value="Forum Ekonomi">Forum Ekonomi</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                            <tr>
+                                <th class="px-5 py-3">Topik / Isu</th>
+                                <th class="px-5 py-3">Sumber</th>
+                                <th class="px-5 py-3">Ringkasan Opini / Kutipan</th>
+                                <th class="px-5 py-3">Klasifikasi Sentimen</th>
+                                <th class="px-5 py-3 text-right">Skor Confidence</th>
+                                <th class="px-5 py-3 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sentimentTableBody" class="divide-y divide-slate-100 font-normal"></tbody>
+                    </table>
+                </div>
+
+                <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+                    <span id="tableInfo">Menampilkan 1 - 6 dari 6 entri</span>
+                    <div class="flex items-center gap-1">
+                        <button class="px-2.5 py-1 border border-slate-200 bg-white rounded hover:bg-slate-100 disabled:opacity-50" disabled>Previous</button>
+                        <button class="px-2.5 py-1 border border-slate-200 bg-white rounded hover:bg-slate-100 disabled:opacity-50" disabled>Next</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Custom Script -->
+    <script src="script.js"></script>
+</body>
+</html>
